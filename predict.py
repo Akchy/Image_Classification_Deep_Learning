@@ -75,28 +75,35 @@ def load_checkpoint(checkpoint_path):
 def process_image(image_path):
     test_image = PIL.Image.open(image_path)
 
+
     # Get original dimensions
     orig_width, orig_height = test_image.size
 
-    # Find shorter size and create settings to crop shortest side to 256
-    if orig_width < orig_height: resize_size=[256, 256**600]
-    else: resize_size=[256**600, 256]
-        
-    test_image.thumbnail(size=resize_size)
 
-    # Find pixels to crop on to create 224x224 image
-    center = orig_width/4, orig_height/4
-    left, top, right, bottom = center[0]-(244/2), center[1]-(244/2), center[0]+(244/2), center[1]+(244/2)
+    # smallest part: width or height should be kept not more than 256
+    if orig_width > orig_height:
+        orig_height = 256
+        im.thumbnail ((50000, orig_height), Image.ANTIALIAS)
+    else:
+        orig_width = 256
+        im.thumbnail ((orig_width,50000), Image.ANTIALIAS)
+
+    orig_width, orig_height = test_image.size #new size of test_image
+    
+    #crop 224x224 in the center
+    reduce = 224
+    left = (orig_width - reduce)/2
+    top = (orig_height - reduce)/2
+    right = left + 224
+    bottom = top + 224
     test_image = test_image.crop((left, top, right, bottom))
 
-    # Converrt to numpy - 244x244 image w/ 3 channels (RGB)
-    np_image = np.array(test_image)/255 # Divided by 255 because imshow() expects integers (0:1)!!
+    #preparing numpy array
+    np_image = np.array (test_image)/255 #to make values from 0 to 1
+    np_image -= np.array ([0.485, 0.456, 0.406])
+    np_image /= np.array ([0.229, 0.224, 0.225])
 
-    # Normalize each color channel
-    normalise_means = [0.485, 0.456, 0.406]
-    normalise_std = [0.229, 0.224, 0.225]
-    np_image = (np_image-normalise_means)/normalise_std
-        
+      
     # Set the color to the first channel
     np_image = np_image.transpose(2, 0, 1)
     
@@ -125,7 +132,14 @@ def predict(image_tensor, model, device, cat_to_name, top_k):
     torch_image = torch.from_numpy(np.expand_dims(image_tensor, 
                                                   axis=0)).type(torch.FloatTensor)
 
-    model=model.cpu()
+    if torch.cuda.is_available() and args.gpu == 'gpu':
+	device = torch.device("cuda:0")
+    else:
+	device = torch.device("cpu")
+	
+	
+    model.to (device)
+    torch_image.to(device)
 
     # Find probabilities (results) by passing through the function (note the log softmax means that its on a log scale)
     log_probs = model.forward(torch_image)

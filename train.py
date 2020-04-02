@@ -116,8 +116,14 @@ def initial_classifier(model, hidden_units):
         print("Number of Hidden Layers specificed as 4096.")
     
     # Find Input Layers
-    input_features = model.classifier[0].in_features
-    
+    if model.name == "vgg16":
+	    input_features = model.classifier[0].in_features
+    else if model.name == "resnet18":
+    	model_ft = models.resnet18(pretrained=True)
+	input_features= model_ft.fc.in_features
+    else if model.name == "alexnet":
+    	alexnet = models.alexnet(pretrained=True)
+	input_features = alexnet.classifier[6].in_features
     # Define Classifier
     classifier = nn.Sequential(OrderedDict([
                           ('fc1', nn.Linear(input_features, hidden_units, bias=True)),
