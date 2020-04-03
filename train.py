@@ -118,10 +118,10 @@ def initial_classifier(model, hidden_units):
     # Find Input Layers
     if model.name == "vgg16":
 	    input_features = model.classifier[0].in_features
-    else if model.name == "resnet18":
+    elif model.name == "resnet18":
     	model_ft = models.resnet18(pretrained=True)
 	input_features= model_ft.fc.in_features
-    else if model.name == "alexnet":
+    elif model.name == "alexnet":
     	alexnet = models.alexnet(pretrained=True)
 	input_features = alexnet.classifier[6].in_features
     # Define Classifier
